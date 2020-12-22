@@ -1,0 +1,7 @@
+{
+  "files.exclude": {
+    "tsconfig.build.json": true
+  },
+  "files.trimTrailingWhitespace": true,
+  "editor.formatOnSave": true
+}

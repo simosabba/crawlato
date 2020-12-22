@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "es5",
+    "lib": ["es2015", "es2015.promise", "esnext.asynciterable"],
+    "outDir": "./dist",
+    "strict": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "moduleResolution": "node",
+    "downlevelIteration": true,
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*", "main.ts"],
+  "exclude": ["node_modules", "**/__test__/*", "**/*.d.ts"]
+}
