@@ -24,7 +24,9 @@ export interface SettingsInput {
   elementsToRemove?: string[]
   allowedDomains?: string[]
   deduplicateUrls?: string[]
+  excludedUrls?: string[]
   scrollPage?: boolean
+  timeoutSeconds?: number
 }
 
 export const buildSettings = (input: SettingsInput): CrawlSettings => {
@@ -39,10 +41,12 @@ export const buildSettings = (input: SettingsInput): CrawlSettings => {
     screenshotBaseFolder: input.screenshotFolder ?? "snap",
     devices: defaultDevices,
     allowedDomains: input.allowedDomains ?? [getDomain(input.url)],
+    timeoutSeconds: input.timeoutSeconds ?? 60,
   }
 }
 
 export const parseSettings = (filePath: string) => {
+  console.log(`Loading settings from ${filePath}`)
   const config = yaml.load(fs.readFileSync(filePath, "utf-8"))
   if (!config) {
     throw new Error(`Cannot load config ${filePath}`)

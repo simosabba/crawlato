@@ -35,7 +35,7 @@ export const processCrawlJob = async (
       width: input.device.width,
     })
 
-    await navigateTo(page, input.url)
+    await navigateTo(page, input.url, options.settings.timeoutSeconds)
 
     const targetFolder = path.join(
       options.screenshotFolder,

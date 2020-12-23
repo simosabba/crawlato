@@ -7,9 +7,8 @@ dotenv.config()
 
 const DEFAULT_SETTINGS_FILE = "settings.yaml"
 const settingsFile =
-  argv.settings ?? fs.existsSync(DEFAULT_SETTINGS_FILE)
-    ? DEFAULT_SETTINGS_FILE
-    : undefined
+  argv.settings ??
+  (fs.existsSync(DEFAULT_SETTINGS_FILE) ? DEFAULT_SETTINGS_FILE : undefined)
 
 const getSettings = () =>
   settingsFile ? parseSettings(settingsFile) : buildSettings(argv)

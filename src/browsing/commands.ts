@@ -1,8 +1,12 @@
 import puppeteer from "puppeteer"
 import { cleanString } from "../utils/strings"
 
-export const navigateTo = (page: puppeteer.Page, url: string) =>
-  page.goto(url, { waitUntil: "networkidle0" })
+export const navigateTo = (
+  page: puppeteer.Page,
+  url: string,
+  timeoutSeconds: number
+) =>
+  page.goto(url, { waitUntil: "networkidle0", timeout: timeoutSeconds * 1000 })
 
 export interface ScrollBottomOptions {
   scrollDelay?: number

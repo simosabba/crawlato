@@ -24,10 +24,11 @@ export class CrawlQueue<TOutput> {
       (x) => x.input.url === input.url && x.input.device.id === input.device.id
     )
 
-  getJobByUrlPrefix = (urlPrefix: string, device: Device) =>
+  getJobByUrlPattern = (urlPrefix: string, device: Device) =>
     this.jobs.find(
       (x) =>
-        x.input.url.startsWith(urlPrefix) && x.input.device.id === device.id
+        x.input.url.match(new RegExp(urlPrefix)) &&
+        x.input.device.id === device.id
     )
 
   findJobs = (status: CrawlJobStatus) =>

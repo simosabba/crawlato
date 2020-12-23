@@ -17,7 +17,9 @@ export interface CrawlSettings {
   screenshotBaseFolder: string
   elementsToRemove?: string[]
   deduplicateUrls?: string[]
+  excludedUrls?: string[]
   scrollPage?: boolean
+  timeoutSeconds: number
 }
 
 export interface WebsitePageInput {

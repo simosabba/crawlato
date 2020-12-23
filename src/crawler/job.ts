@@ -11,7 +11,7 @@ import {
   WebsitePageInput,
 } from "./types"
 import { WebsiteGraph } from "./site-graph"
-import { isDuplicatedUrl, isValidUrl } from "./filters"
+import { shouldProcessUrl } from "./filters"
 
 type JotInstance = CrawlJobQueueItem<WebsitePage>
 type JobResult = CrawlJobOutput<WebsitePage>
@@ -38,11 +38,14 @@ export class CrawlJob {
         console.log(
           `Processing ${nextJob.input.device.id} -> ${nextJob.input.url}`
         )
-        const page = await this.processPage(browser, nextJob)
-        this.addToGraph(page)
 
-        if (this.graph.getDepth(page.input) < this.settings.depth) {
-          page.links.forEach((x) => this.submitLinkToQueue(x, page))
+        const page = await this.processPage(browser, nextJob)
+        if (page) {
+          this.addToGraph(page)
+
+          if (this.graph.getDepth(page.input) < this.settings.depth) {
+            page.links.forEach((x) => this.submitLinkToQueue(x, page))
+          }
         }
 
         console.log(`QUEUED JOBS:`)
@@ -61,18 +64,8 @@ export class CrawlJob {
   }
 
   private submitLinkToQueue = (url: string, source: JobResult) => {
-    if (!isValidUrl(url, this.settings)) {
-      return
-    }
-
-    if (isDuplicatedUrl(url, source.input.device, this.settings, this.queue)) {
-      return
-    }
     if (
-      this.queue.containsJob({
-        url,
-        device: source.input.device,
-      })
+      !shouldProcessUrl(url, source.input.device, this.settings, this.queue)
     ) {
       return
     }
@@ -110,19 +103,26 @@ export class CrawlJob {
     browser: puppeteer.Browser,
     job: JotInstance
   ) => {
-    this.queue.updateJob(job.id, "running")
+    try {
+      this.queue.updateJob(job.id, "running")
 
-    const result = await processCrawlJob(browser, job.input, {
-      screenshotFolder: path.join(
-        this.settings.screenshotBaseFolder,
-        this.runId
-      ),
-      referrer: job.referrer,
-      settings: this.settings,
-    })
+      const result = await processCrawlJob(browser, job.input, {
+        screenshotFolder: path.join(
+          this.settings.screenshotBaseFolder,
+          this.runId
+        ),
+        referrer: job.referrer,
+        settings: this.settings,
+      })
 
-    this.queue.updateJob(job.id, "completed", result)
-    return result
+      this.queue.updateJob(job.id, "completed", result)
+      return result
+    } catch (e) {
+      this.queue.updateJob(job.id, "faulted")
+      console.error("Error processing page", job.input)
+      console.error(e)
+      return undefined
+    }
   }
 
   private nextJob = () => this.queue.findJob("pending")
