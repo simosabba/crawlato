@@ -2,7 +2,7 @@ import Graph from "graph-data-structure"
 
 export interface ExtendedGraphOptions<T> {
   idSelector: (node: T) => string
-  caseVariantId?: boolean
+  idNormalizer: (id: string) => string
 }
 
 export type NodeId = string
@@ -24,7 +24,9 @@ export class ExtendedGraph<T> {
     this.nodesMap.delete(this.nodeId(node))
   }
 
-  containsNode = (id: NodeId) => this.nodesMap.has(this.normalizeId(id))
+  existsNode = (node: NodeOrId<T>) => this.nodesMap.has(this.nodeId(node))
+
+  getNode = (node: NodeOrId<T>) => this.nodesMap.get(this.nodeId(node))
 
   addEdge = (from: NodeOrId<T>, to: NodeOrId<T>, weight?: number) =>
     this.graph.addEdge(this.nodeId(from), this.nodeId(to), weight)
@@ -32,13 +34,20 @@ export class ExtendedGraph<T> {
   removeEdge = (from: NodeOrId<T>, to: NodeOrId<T>) =>
     this.graph.removeEdge(this.nodeId(from), this.nodeId(to))
 
-  private nodeId = (value: NodeOrId<T>) => {
+  existsEdge = (from: NodeOrId<T>, to: NodeOrId<T>) =>
+    this.graph
+      .adjacent(this.nodeId(from))
+      .find((x) => x === this.nodeId(to)) !== undefined
+
+  getDistance = (from: NodeOrId<T>, to: NodeOrId<T>) =>
+    this.graph.shortestPath(this.nodeId(from), this.nodeId(to)).length - 1
+
+  nodeId = (value: NodeOrId<T>) => {
     if (typeof value === "string") {
       return this.normalizeId(value)
     }
     return this.normalizeId(this.options.idSelector(value))
   }
 
-  private normalizeId = (value: NodeId) =>
-    this.options.caseVariantId ? value : value.toLowerCase()
+  private normalizeId = (value: NodeId) => this.options.idNormalizer(value)
 }

@@ -1,6 +1,7 @@
 import yaml from "js-yaml"
 import fs from "fs"
 import { CrawlSettings, Device } from "./types"
+import { getDomain } from "../utils/urls"
 
 const defaultDevices: Device[] = [
   {
@@ -8,11 +9,11 @@ const defaultDevices: Device[] = [
     width: 375,
     height: 667,
   },
-  {
-    id: "laptop",
-    width: 1680,
-    height: 1050,
-  },
+  // {
+  //   id: "laptop",
+  //   width: 1680,
+  //   height: 1050,
+  // },
 ]
 
 export interface SettingsInput {
@@ -21,11 +22,12 @@ export interface SettingsInput {
   screenshotFolder?: string
   devices?: Device[]
   elementsToRemove?: string[]
+  allowedDomains?: string[]
 }
 
 export const buildSettings = (input: SettingsInput): CrawlSettings => {
   if (!input.url) {
-    throw new Error("Missing url")
+    throw new Error("Missing root url")
   }
   return {
     url: input.url,
@@ -34,6 +36,7 @@ export const buildSettings = (input: SettingsInput): CrawlSettings => {
     screenshotBaseFolder: input.screenshotFolder ?? "snap",
     devices: defaultDevices,
     elementsToRemove: input.elementsToRemove,
+    allowedDomains: input.allowedDomains ?? [getDomain(input.url)],
   }
 }
 

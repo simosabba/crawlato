@@ -7,18 +7,20 @@ import {
   removeElements,
   scrollToBottom,
 } from "../browsing/commands"
-import { CrawlJobInput, CrawlJobOutput, DefaultOutput, Device } from "./types"
+import { WebsitePageInput, CrawlJobOutput, WebsitePage, Device } from "./types"
+import { replaceMap } from "../utils/strings"
 
 export interface ProcessCrawlJobOptions {
   screenshotFolder: string
   elementsToRemove: string[]
+  referrer?: WebsitePageInput
 }
 
 export const processCrawlJob = async (
   browser: puppeteer.Browser,
-  input: CrawlJobInput,
+  input: WebsitePageInput,
   options: ProcessCrawlJobOptions
-): Promise<CrawlJobOutput<DefaultOutput>> => {
+): Promise<CrawlJobOutput<WebsitePage>> => {
   const page = await browser.newPage()
 
   try {
@@ -46,10 +48,15 @@ export const processCrawlJob = async (
     })
 
     return {
+      input,
       data: {
+        url: input.url,
+        title: await page.title(),
+        description: "", // TODO: get description
         screenshotPath,
       },
       links: (await extractLinks(page)) ?? [],
+      referrer: options.referrer,
     }
   } finally {
     await page.close()
@@ -63,8 +70,10 @@ const removeExtraElements = async (
   selectors.forEach(async (selector) => await removeElements(page, selector))
 }
 
-const extractLinks = (page: puppeteer.Page) =>
-  getElementsAttribute(page, "a", "href")
+const extractLinks = async (page: puppeteer.Page) =>
+  (await getElementsAttribute(page, "a", "href"))
+    ?.map((x) => x.trim())
+    .filter((x) => x)
 
 const ensureFolder = (folder: string) => {
   if (!fs.existsSync(folder)) {
@@ -77,11 +86,12 @@ const ensureFolder = (folder: string) => {
 const deviceFolder = (device: Device) =>
   `${device.id}_${device.width}x${device.height}`
 
-const pageFilename = (input: CrawlJobInput) =>
+const pageFilename = (input: WebsitePageInput) =>
   `${input.device.id}_${cleanUrl(input.url)}.png`
 
 const cleanUrl = (url: string) =>
-  replaceAll(replaceAll(replaceAll(url, "/", "-"), ":", ""), ".", "_")
-
-const replaceAll = (value: string, from: string, to: string) =>
-  value.split(from).join(to)
+  replaceMap(url, [
+    { from: ["/", "?"], to: "-" },
+    { from: [":"], to: "" },
+    { from: ["."], to: "_" },
+  ])

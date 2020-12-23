@@ -4,26 +4,30 @@ import { generateRunId } from "../utils/uids"
 import { processCrawlJob } from "./actions"
 import { CrawlQueue } from "./queue"
 import {
+  CrawlJobOutput,
   CrawlJobQueueItem,
   CrawlSettings,
-  DefaultOutput,
-  WebsiteGraph,
+  WebsitePage,
+  WebsitePageInput,
 } from "./types"
+import { WebsiteGraph } from "./site-graph"
+import { isValidUrl } from "./filters"
 
-type JotInstance = CrawlJobQueueItem<DefaultOutput>
+type JotInstance = CrawlJobQueueItem<WebsitePage>
+type JobResult = CrawlJobOutput<WebsitePage>
 
 export class CrawlJob {
   private readonly runId = generateRunId()
-  private readonly queue = new CrawlQueue<DefaultOutput>()
+  private readonly queue = new CrawlQueue<WebsitePage>()
   private readonly graph = new WebsiteGraph()
 
   constructor(private readonly settings: CrawlSettings) {}
 
   run = async () => {
     console.log("CRAWL STARTED")
-    this.getStartUrls().forEach((url) => this.submitUrl(url))
+    this.getStartUrls().forEach((url) => this.submitRootUrl(url))
     const browser = await puppeteer.launch({
-      headless: process.env.HEADLESS === "true",
+      headless: process.env.HEADLESS !== "false",
     })
     try {
       while (true) {
@@ -31,7 +35,24 @@ export class CrawlJob {
         if (!nextJob) {
           break
         }
-        await this.processJob(browser, nextJob)
+        console.log(
+          `Processing ${nextJob.input.device.id} -> ${nextJob.input.url}`
+        )
+        const page = await this.processPage(browser, nextJob)
+        this.addToGraph(page)
+
+        if (this.graph.getDepth(page.input) < this.settings.depth) {
+          page.links.forEach((x) => this.submitLinkToQueue(x, page))
+        }
+
+        console.log(`QUEUED JOBS:`)
+        console.log(
+          this.queue
+            .findJobs("pending")
+            .map((x) => `${x.input.device.id} -> ${x.input.url}`)
+            .join("\n")
+        )
+        console.log(`TOT -> ${this.queue.findJobs("pending").length}`)
       }
     } finally {
       await browser.close()
@@ -39,8 +60,55 @@ export class CrawlJob {
     console.log("CRAWL COMPLETED")
   }
 
-  private processJob = async (browser: puppeteer.Browser, job: JotInstance) => {
-    console.log(`Processing url ${job.input.url}`)
+  private submitLinkToQueue = (url: string, source: JobResult) => {
+    // console.debug(`Evaluating url ${url}`)
+    if (!isValidUrl(url, this.settings)) {
+      // console.log(`Skipping ${url} for invalid domain`)
+      return
+    }
+
+    if (
+      this.queue.containsJob({
+        url,
+        device: source.input.device,
+      })
+    ) {
+      return
+    }
+
+    this.queue.submitJob(
+      {
+        url,
+        device: source.input.device,
+      },
+      source.input
+    )
+  }
+
+  private addToGraph = (page: JobResult) => {
+    this.graph.setPageData(page.input, page.data)
+    page.links.forEach((x) => this.addPageLinkToGraph(page.input, x))
+  }
+
+  private addPageLinkToGraph = (page: WebsitePageInput, link: string) => {
+    const linkedPage = {
+      device: page.device,
+      url: link,
+    }
+    if (!this.graph.containsPage(linkedPage)) {
+      this.graph.addPage({
+        page: linkedPage,
+      })
+    }
+    if (!this.graph.existsLink(page, linkedPage)) {
+      this.graph.addPageLink(page, linkedPage)
+    }
+  }
+
+  private processPage = async (
+    browser: puppeteer.Browser,
+    job: JotInstance
+  ) => {
     this.queue.updateJob(job.id, "running")
 
     const result = await processCrawlJob(browser, job.input, {
@@ -49,9 +117,11 @@ export class CrawlJob {
         this.runId
       ),
       elementsToRemove: this.settings.elementsToRemove ?? [],
+      referrer: job.referrer,
     })
 
     this.queue.updateJob(job.id, "completed", result)
+    return result
   }
 
   private nextJob = () => this.queue.findJob("pending")
@@ -65,11 +135,22 @@ export class CrawlJob {
     return []
   }
 
-  private submitUrl = (url: string) =>
-    this.settings.devices.forEach((device) =>
-      this.queue.submitJob({
-        url,
-        device,
-      })
+  private submitRootUrl = (url: string) =>
+    this.getRootPages(url).forEach(this.submitRootPage)
+
+  private submitRootPage = (page: WebsitePageInput) => {
+    this.queue.submitJob(page)
+    this.graph.addPage(
+      {
+        page,
+      },
+      true
     )
+  }
+
+  private getRootPages = (url: string): WebsitePageInput[] =>
+    this.settings.devices.map((x) => ({
+      device: x,
+      url,
+    }))
 }

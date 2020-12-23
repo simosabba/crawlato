@@ -1,6 +1,6 @@
 import { generateJobId } from "../utils/uids"
 import {
-  CrawlJobInput,
+  WebsitePageInput,
   CrawlJobOutput,
   CrawlJobQueueItem,
   CrawlJobStatus,
@@ -10,12 +10,18 @@ import {
 export class CrawlQueue<TOutput> {
   private readonly jobs: CrawlJobQueueItem<TOutput>[] = []
 
-  submitJob = (input: CrawlJobInput) =>
+  submitJob = (input: WebsitePageInput, referrer?: WebsitePageInput) =>
     this.jobs.push({
       id: generateJobId(),
       input,
       status: "pending",
+      referrer,
     })
+
+  containsJob = (input: WebsitePageInput) =>
+    this.jobs.find(
+      (x) => x.input.url === input.url && x.input.device.id === input.device.id
+    )
 
   findJobs = (status: CrawlJobStatus) =>
     this.jobs.filter((x) => x.status === status)

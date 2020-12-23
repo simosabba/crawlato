@@ -13,16 +13,19 @@ export interface CrawlSettings {
   urlType: UrlType
   depth: number
   devices: Device[]
+  allowedDomains: string[]
   screenshotBaseFolder: string
   elementsToRemove?: string[]
 }
 
-export interface CrawlJobInput {
+export interface WebsitePageInput {
   url: string
   device: Device
 }
 
 export interface CrawlJobOutput<TOutput> {
+  input: WebsitePageInput
+  referrer?: WebsitePageInput
   data: TOutput
   links: string[]
 }
@@ -32,26 +35,15 @@ export type JobId = string
 
 export interface CrawlJobQueueItem<TOutput> {
   id: JobId
-  input: CrawlJobInput
+  input: WebsitePageInput
+  referrer?: WebsitePageInput
   status: CrawlJobStatus
   output?: CrawlJobOutput<TOutput>
-}
-
-export interface DefaultOutput {
-  screenshotPath: string
 }
 
 export interface WebsitePage {
   url: string
   title: string
   description: string
-}
-
-export class WebsiteGraph extends ExtendedGraph<WebsitePage> {
-  constructor() {
-    super({
-      idSelector: (x) => x.url.toLowerCase(),
-      caseVariantId: false,
-    })
-  }
+  screenshotPath: string
 }
