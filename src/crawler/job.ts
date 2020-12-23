@@ -11,7 +11,7 @@ import {
   WebsitePageInput,
 } from "./types"
 import { WebsiteGraph } from "./site-graph"
-import { isValidUrl } from "./filters"
+import { isDuplicatedUrl, isValidUrl } from "./filters"
 
 type JotInstance = CrawlJobQueueItem<WebsitePage>
 type JobResult = CrawlJobOutput<WebsitePage>
@@ -61,12 +61,13 @@ export class CrawlJob {
   }
 
   private submitLinkToQueue = (url: string, source: JobResult) => {
-    // console.debug(`Evaluating url ${url}`)
     if (!isValidUrl(url, this.settings)) {
-      // console.log(`Skipping ${url} for invalid domain`)
       return
     }
 
+    if (isDuplicatedUrl(url, source.input.device, this.settings, this.queue)) {
+      return
+    }
     if (
       this.queue.containsJob({
         url,
@@ -116,8 +117,8 @@ export class CrawlJob {
         this.settings.screenshotBaseFolder,
         this.runId
       ),
-      elementsToRemove: this.settings.elementsToRemove ?? [],
       referrer: job.referrer,
+      settings: this.settings,
     })
 
     this.queue.updateJob(job.id, "completed", result)

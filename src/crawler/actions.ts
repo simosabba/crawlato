@@ -7,13 +7,19 @@ import {
   removeElements,
   scrollToBottom,
 } from "../browsing/commands"
-import { WebsitePageInput, CrawlJobOutput, WebsitePage, Device } from "./types"
+import {
+  WebsitePageInput,
+  CrawlJobOutput,
+  WebsitePage,
+  Device,
+  CrawlSettings,
+} from "./types"
 import { replaceMap } from "../utils/strings"
 
 export interface ProcessCrawlJobOptions {
   screenshotFolder: string
-  elementsToRemove: string[]
   referrer?: WebsitePageInput
+  settings: CrawlSettings
 }
 
 export const processCrawlJob = async (
@@ -39,8 +45,13 @@ export const processCrawlJob = async (
     ensureFolder(targetFolder)
     const screenshotPath = path.join(targetFolder, pageFilename(input))
 
-    await scrollToBottom(page)
-    await removeExtraElements(page, options.elementsToRemove)
+    if (options.settings.scrollPage) {
+      await scrollToBottom(page)
+    }
+
+    if (options.settings.elementsToRemove) {
+      await removeExtraElements(page, options.settings.elementsToRemove)
+    }
 
     await page.screenshot({
       fullPage: true,

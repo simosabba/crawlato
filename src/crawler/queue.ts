@@ -5,6 +5,7 @@ import {
   CrawlJobQueueItem,
   CrawlJobStatus,
   JobId,
+  Device,
 } from "./types"
 
 export class CrawlQueue<TOutput> {
@@ -23,12 +24,20 @@ export class CrawlQueue<TOutput> {
       (x) => x.input.url === input.url && x.input.device.id === input.device.id
     )
 
+  getJobByUrlPrefix = (urlPrefix: string, device: Device) =>
+    this.jobs.find(
+      (x) =>
+        x.input.url.startsWith(urlPrefix) && x.input.device.id === device.id
+    )
+
   findJobs = (status: CrawlJobStatus) =>
     this.jobs.filter((x) => x.status === status)
 
   findJob = (status: CrawlJobStatus) => this.findJobs(status)?.[0]
 
   getJob = (jobId: JobId) => this.jobs.filter((x) => x.id === jobId)?.[0]
+
+  allJobs = () => Array.from(this.jobs)
 
   updateJob = (
     jobId: JobId,

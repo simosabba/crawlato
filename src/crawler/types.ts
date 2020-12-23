@@ -16,6 +16,8 @@ export interface CrawlSettings {
   allowedDomains: string[]
   screenshotBaseFolder: string
   elementsToRemove?: string[]
+  deduplicateUrls?: string[]
+  scrollPage?: boolean
 }
 
 export interface WebsitePageInput {

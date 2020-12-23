@@ -23,6 +23,8 @@ export interface SettingsInput {
   devices?: Device[]
   elementsToRemove?: string[]
   allowedDomains?: string[]
+  deduplicateUrls?: string[]
+  scrollPage?: boolean
 }
 
 export const buildSettings = (input: SettingsInput): CrawlSettings => {
@@ -30,12 +32,12 @@ export const buildSettings = (input: SettingsInput): CrawlSettings => {
     throw new Error("Missing root url")
   }
   return {
+    ...input,
     url: input.url,
     urlType: input.url.toLowerCase().endsWith(".xml") ? "sitemap" : "root",
     depth: input.depth ?? 1,
     screenshotBaseFolder: input.screenshotFolder ?? "snap",
     devices: defaultDevices,
-    elementsToRemove: input.elementsToRemove,
     allowedDomains: input.allowedDomains ?? [getDomain(input.url)],
   }
 }
