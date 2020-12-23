@@ -9,11 +9,11 @@ const defaultDevices: Device[] = [
     width: 375,
     height: 667,
   },
-  // {
-  //   id: "laptop",
-  //   width: 1680,
-  //   height: 1050,
-  // },
+  {
+    id: "laptop",
+    width: 1680,
+    height: 1050,
+  },
 ]
 
 export interface SettingsInput {
