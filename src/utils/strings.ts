@@ -23,3 +23,14 @@ export const replaceMap = (value: string, terms: StrMap[]) => {
   terms.forEach((x) => (result = replaceAllChars(result, x.from, x.to)))
   return result
 }
+
+export const startsWithAny = (
+  value: string,
+  prefixes: string[],
+  ignoreCase = true
+) => prefixes.find((x) => startsWith(value, x, ignoreCase))
+
+export const startsWith = (value: string, prefix: string, ignoreCase = true) =>
+  (ignoreCase ? value.toLowerCase() : value).startsWith(
+    ignoreCase ? prefix.toLowerCase() : prefix
+  )

@@ -1,13 +1,16 @@
+import { startsWithAny } from "../utils/strings"
 import { getDomain } from "../utils/urls"
 import { CrawlQueue } from "./queue"
 import { CrawlSettings, Device } from "./types"
 
+const hasValidScheme = (url: string) =>
+  startsWithAny(url, ["http://", "https://"])
+
 const hasValidDomain = (url: string, settings: CrawlSettings) =>
-  url.includes("://") &&
   settings.allowedDomains.find((x) => x.toLowerCase() === getDomain(url))
 
 const isExcludedUrl = (url: string, settings: CrawlSettings) =>
-  settings.excludedUrls?.find((x) => x.match(new RegExp(url))) !== undefined
+  settings.excludedUrls?.find((x) => url.match(new RegExp(x))) !== undefined
 
 const isHashDuplicate = <TQueue>(
   url: string,
@@ -58,6 +61,7 @@ export const shouldProcessUrl = <TQueue>(
   settings: CrawlSettings,
   queue: CrawlQueue<TQueue>
 ) =>
+  hasValidScheme(url) &&
   hasValidDomain(url, settings) &&
   !isAlreadyInsideQueue(url, device, queue) &&
   !isExcludedUrl(url, settings) &&
