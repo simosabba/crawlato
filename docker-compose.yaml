@@ -1,0 +1,12 @@
+version: "3.6"
+services:
+  crawler:
+    build:
+      target: development_build
+      context: ./crawler
+      dockerfile: Dockerfile
+    networks:
+      - backend
+
+networks:
+  backend:

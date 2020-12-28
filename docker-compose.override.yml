@@ -1,0 +1,35 @@
+---
+# This docker-compose file is required to bind ports in development,
+# since binding ports in regular compose file will ruin scaling
+# in production. Due to how `ports` directive is merged with two files.
+#
+# This file is ignored in production, but
+# it is automatically picked up in development with:
+#
+#  $ docker-compose up
+
+version: "3.6"
+services:
+  crawler:
+    env_file:
+      - ./crawler/.env
+    volumes:
+      - ./crawler:/usr/src/app
+    depends_on:
+      - arango
+
+  arango:
+    image: arangodb
+    environment:
+      ARANGO_ROOT_PASSWORD: arango
+    ports:
+      - "8529:8529"
+    volumes:
+      - arangodb_data_container:/var/lib/arangodb3
+      - arangodb_apps_data_container:/var/lib/arangodb3-apps
+    networks:
+      - backend
+
+volumes:
+  arangodb_data_container:
+  arangodb_apps_data_container:
