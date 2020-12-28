@@ -14,7 +14,7 @@ services:
     env_file:
       - ./crawler/.env
     volumes:
-      - ./crawler:/usr/src/app
+      - ./crawler/src:/usr/src/app/src
     depends_on:
       - arango
 

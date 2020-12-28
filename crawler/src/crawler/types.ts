@@ -1,5 +1,3 @@
-import { ExtendedGraph } from "../graph/extended-graph"
-
 export interface Device {
   id: string
   height: number

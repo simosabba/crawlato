@@ -1,8 +1,16 @@
 import { ExtendedGraph } from "../graph/extended-graph"
+import { WebsitePagesRepo } from "../repo/graphs"
 import { trimEnd } from "../utils/strings"
-import { Device, WebsitePage, WebsitePageInput } from "./types"
+import { WebsitePage, WebsitePageInput } from "./types"
+
+export interface NodeInfo {
+  nodeId: string
+  isRoot: boolean
+  runId: string
+}
 
 export interface WebsiteGraphNode {
+  info: NodeInfo
   page: WebsitePageInput
   data?: WebsitePage
 }
@@ -50,16 +58,17 @@ export class WebsiteGraph {
     }
     p.data = data
   }
+
   getPage = (page: WebsitePageInput) =>
     this.getDeviceGraph(page.device.id).getNode(page.url)
 
   getDepth = (page: WebsitePageInput) =>
     this.getNodeGraph(page).getPageDepth(page)
 
-  addPage = (targetPage: WebsiteGraphNode, isRoot?: boolean) => {
+  addPage = (targetPage: WebsiteGraphNode) => {
     this.addPageNode(targetPage)
 
-    if (isRoot) {
+    if (targetPage.info.isRoot) {
       this.getNodeGraph(targetPage.page).addRoot(targetPage)
     }
   }
@@ -85,5 +94,11 @@ export class WebsiteGraph {
       this.graphs.set(deviceId, new WebsitePagesGraph())
     }
     return this.graphs.get(deviceId) as WebsitePagesGraph
+  }
+}
+
+export class WebsiteGraphRepo extends WebsitePagesRepo<WebsiteGraphNode> {
+  constructor() {
+    super((x) => x.info.nodeId)
   }
 }

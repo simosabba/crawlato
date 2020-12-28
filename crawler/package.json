@@ -6,6 +6,7 @@
   "author": "Simone Sabba <sabba85@gmail.com>",
   "license": "MIT",
   "dependencies": {
+    "arangojs": "^7.2.0",
     "dotenv": "^8.2.0",
     "graph-data-structure": "^1.13.0",
     "js-yaml": "^3.14.1",
