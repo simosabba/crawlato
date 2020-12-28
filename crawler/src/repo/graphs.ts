@@ -1,3 +1,4 @@
+import { aql } from "arangojs"
 import { Graph } from "arangojs/graph"
 import { db } from "../infrastructure/arango/client"
 
@@ -16,11 +17,26 @@ export class WebsitePagesRepo<TPage> {
   }
 
   insertLink = async (from: TPage, to: TPage) => {
-    await (await this.edges()).save({
-      _from: this.idSelector(from),
-      _to: this.idSelector(to),
-    })
+    const edge = {
+      _from: await this.getVertexId(from),
+      _to: await this.getVertexId(to),
+    }
+    console.log("creating edge", edge)
+    await (await this.edges()).save(edge)
   }
+
+  private getVertexId = async (page: TPage) => (await this.getVertex(page))?._id
+
+  private getVertex = async (page: TPage) =>
+    await (
+      await db.query({
+        query: `FOR page IN websitePages FILTER page.info.nodeId == @nodeId RETURN page`,
+        bindVars: {
+          // c: await this.vertex(),
+          nodeId: this.idSelector(page),
+        },
+      })
+    ).next()
 
   private edges = async () =>
     (await this.ensureGraph()).edgeCollection("websiteLinks")
@@ -28,7 +44,7 @@ export class WebsitePagesRepo<TPage> {
   private vertex = async () =>
     (await this.ensureGraph()).vertexCollection("websitePages")
 
-  private ensureGraph = async () => {
+  ensureGraph = async () => {
     if (!this.graph) {
       this.graph = await this.initializeGraph()
     }

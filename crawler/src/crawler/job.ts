@@ -7,6 +7,7 @@ import {
   CrawlJobOutput,
   CrawlJobQueueItem,
   CrawlSettings,
+  Device,
   WebsitePage,
   WebsitePageInput,
 } from "./types"
@@ -26,6 +27,7 @@ export class CrawlJob {
 
   run = async () => {
     console.log("CRAWL STARTED")
+    await this.repo.ensureGraph()
     await Promise.all(this.getStartUrls().map((url) => this.submitRootUrl(url)))
     const browser = await puppeteer.launch({
       headless: process.env.HEADLESS !== "false",
@@ -84,28 +86,18 @@ export class CrawlJob {
 
   private addToGraph = async (page: JobResult) => {
     this.graph.setPageData(page.input, page.data)
-    await Promise.all(
-      page.links.map((x) => this.addPageLinkToGraph(page.input, x))
-    )
+    for (const link of page.links) {
+      await this.addPageLinkToGraph(page.input, link)
+    }
   }
 
   private addPageLinkToGraph = async (page: WebsitePageInput, link: string) => {
-    const linkedPage = {
-      device: page.device,
-      url: link,
-    }
-    if (!this.graph.containsPage(linkedPage)) {
-      await this.createPageNode({
-        info: {
-          isRoot: false,
-          nodeId: generatePageId(),
-          runId: this.runId,
-        },
-        page: linkedPage,
-      })
-    }
-    if (!this.graph.existsLink(page, linkedPage)) {
-      this.graph.addPageLink(page, linkedPage)
+    const linkedPage = await this.getOrCreatePageNode(link, page.device)
+    if (!this.graph.existsLink(page, linkedPage.page)) {
+      await this.createPageLink(
+        this.graph.getPage(page) as WebsiteGraphNode,
+        linkedPage
+      )
     }
   }
 
@@ -159,6 +151,38 @@ export class CrawlJob {
       },
       page,
     })
+  }
+
+  private createPageLink = async (
+    from: WebsiteGraphNode,
+    to: WebsiteGraphNode
+  ) => {
+    this.graph.addPageLink(from.page, to.page)
+    await this.repo.insertLink(from, to)
+  }
+
+  private getOrCreatePageNode = async (
+    url: string,
+    device: Device
+  ): Promise<WebsiteGraphNode> => {
+    const input = {
+      device,
+      url,
+    }
+    const page = this.graph.getPage(input)
+    if (page) {
+      return page
+    }
+    const node = {
+      info: {
+        isRoot: false,
+        nodeId: generatePageId(),
+        runId: this.runId,
+      },
+      page: input,
+    }
+    await this.createPageNode(node)
+    return node
   }
 
   private createPageNode = async (page: WebsiteGraphNode) => {
