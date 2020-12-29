@@ -1,5 +1,5 @@
 import { ExtendedGraph } from "../graph/extended-graph"
-import { WebsitePagesRepo } from "../repo/graphs"
+import { WebsitePagesArangoRepo } from "../repo/pages-arango"
 import { trimEnd } from "../utils/strings"
 import { WebsitePage, WebsitePageInput } from "./types"
 
@@ -97,7 +97,7 @@ export class WebsiteGraph {
   }
 }
 
-export class WebsiteGraphRepo extends WebsitePagesRepo<WebsiteGraphNode> {
+export class WebsiteGraphRepo extends WebsitePagesArangoRepo<WebsiteGraphNode> {
   constructor() {
     super((x) => x.info.nodeId)
   }

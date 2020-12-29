@@ -1,13 +1,15 @@
-import { aql } from "arangojs"
 import { Graph } from "arangojs/graph"
 import { db } from "../infrastructure/arango/client"
+import { GraphRepo } from "./types"
 
-export class WebsitePagesRepo<TPage> {
+export class WebsitePagesArangoRepo<TPage> implements GraphRepo<TPage> {
   private graph: Graph | undefined
-  //private readonly edges = this.graph.edgeCollection("websiteLinks")
-  //private readonly vertex = this.graph.vertexCollection("websitePages")
 
   constructor(private idSelector: (page: TPage) => string) {}
+
+  init = async () => {
+    await this.ensureGraph()
+  }
 
   insertPage = async (page: TPage) => {
     await (await this.vertex()).save({
@@ -44,7 +46,7 @@ export class WebsitePagesRepo<TPage> {
   private vertex = async () =>
     (await this.ensureGraph()).vertexCollection("websitePages")
 
-  ensureGraph = async () => {
+  private ensureGraph = async () => {
     if (!this.graph) {
       this.graph = await this.initializeGraph()
     }

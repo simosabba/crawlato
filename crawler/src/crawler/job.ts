@@ -27,7 +27,7 @@ export class CrawlJob {
 
   run = async () => {
     console.log("CRAWL STARTED")
-    await this.repo.ensureGraph()
+    await this.repo.init()
     await Promise.all(this.getStartUrls().map((url) => this.submitRootUrl(url)))
     const browser = await puppeteer.launch({
       headless: process.env.HEADLESS !== "false",
