@@ -85,10 +85,23 @@ export class CrawlJob {
   }
 
   private addToGraph = async (page: JobResult) => {
-    this.graph.setPageData(page.input, page.data)
+    this.updatePageData(page)
+
     for (const link of page.links) {
       await this.addPageLinkToGraph(page.input, link)
     }
+  }
+
+  private updatePageData = async (page: JobResult) => {
+    this.graph.setPageData(page.input, page.data)
+    const node = await this.getOrCreatePageNode(
+      page.input.url,
+      page.input.device
+    )
+    await this.repo.updatePage({
+      ...node,
+      data: page.data,
+    })
   }
 
   private addPageLinkToGraph = async (page: WebsitePageInput, link: string) => {

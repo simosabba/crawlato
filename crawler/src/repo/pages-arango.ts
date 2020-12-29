@@ -18,6 +18,10 @@ export class WebsitePagesArangoRepo<TPage> implements GraphRepo<TPage> {
     })
   }
 
+  updatePage = async (page: TPage) => {
+    await (await this.vertex()).update(await this.getVertexId(page), page)
+  }
+
   insertLink = async (from: TPage, to: TPage) => {
     const edge = {
       _from: await this.getVertexId(from),
