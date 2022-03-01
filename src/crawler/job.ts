@@ -111,6 +111,10 @@ export class CrawlJob {
           this.settings.screenshotBaseFolder,
           this.runId
         ),
+        filesFolder: path.join(
+          this.settings.filesFolder,
+          this.runId
+        ),
         referrer: job.referrer,
         settings: this.settings,
       })

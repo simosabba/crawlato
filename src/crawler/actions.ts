@@ -1,6 +1,5 @@
 import puppeteer from "puppeteer"
-import fs from "fs"
-import path from "path"
+import fs, { writeFileSync } from "fs"
 import {
   getElementsAttribute,
   navigateTo,
@@ -14,10 +13,16 @@ import {
   Device,
   CrawlSettings,
 } from "./types"
-import { replaceMap } from "../utils/strings"
+import { replaceAll, replaceAllChars, replaceMap } from "../utils/strings"
+import { getExtension, getRelativePath } from "../utils/urls"
+import { newUuid } from "../utils/uids"
+import { getFolder, joinPath } from "../utils/paths"
+
+const MAX_PATH_LENGTH = 200
 
 export interface ProcessCrawlJobOptions {
   screenshotFolder: string
+  filesFolder: string
   referrer?: WebsitePageInput
   settings: CrawlSettings
 }
@@ -26,12 +31,12 @@ const takeScreenshot = async (
   input: WebsitePageInput,
   options: ProcessCrawlJobOptions,
   page: puppeteer.Page) => {
-  const targetScreenshotFolder = path.join(
+  const targetScreenshotFolder = joinPath(
     options.screenshotFolder,
     deviceFolder(input.device)
   )
   ensureFolder(targetScreenshotFolder)
-  const screenshotPath = path.join(targetScreenshotFolder, pageFilename(input))
+  const screenshotPath = joinPath(targetScreenshotFolder, pageFilename(input))
   await page.screenshot({
     fullPage: true,
     path: screenshotPath,
@@ -42,13 +47,21 @@ const takeScreenshot = async (
   }
 }
 
-const saveFiles = async (
+const savePageFile = async (
   input: WebsitePageInput,
   options: ProcessCrawlJobOptions,
-  page: puppeteer.Page) => {
-
+  filename: string,
+  content: string | Buffer) => {
+  const targetHtmlFolder = joinPath(
+    options.filesFolder,
+    pageFolder(input)
+  )
+  const filePath = joinPath(targetHtmlFolder, filename)
+  const folder = getFolder(filePath)
+  ensureFolder(folder)
+  writeFileSync(filePath, content)
   return {
-    path: ""
+    folder: targetHtmlFolder
   }
 }
 
@@ -65,6 +78,12 @@ export const processCrawlJob = async (
       width: input.device.width,
     })
 
+    page.on("response", async response => {
+      const data = await response.buffer()
+      const text = await response.text()
+      await savePageFile(input, options, getFilePath(response.request().url()), data ?? text)
+    })
+
     await navigateTo(page, input.url, options.settings.timeoutSeconds)
 
     if (options.settings.scrollPage) {
@@ -76,7 +95,8 @@ export const processCrawlJob = async (
     }
 
     const screenshot = await takeScreenshot(input, options, page)
-    const files = await saveFiles(input, options, page)
+
+    const htmlDump = await savePageFile(input, options, "index.html", await page.content())
 
     return {
       input,
@@ -85,7 +105,7 @@ export const processCrawlJob = async (
         title: await page.title(),
         description: "", // TODO: get description
         screenshotPath: screenshot.path,
-        filesPath: files.path
+        filesPath: htmlDump.folder
       },
       links: (await extractLinks(page)) ?? [],
       referrer: options.referrer,
@@ -118,8 +138,6 @@ const ensureFolder = (folder: string) => {
 const deviceFolder = (device: Device) =>
   `${device.id}_${device.width}x${device.height}`
 
-const pageFilename = (input: WebsitePageInput) =>
-  `${input.device.id}_${cleanUrl(input.url)}.png`
 
 const cleanUrl = (url: string) =>
   replaceMap(url, [
@@ -127,3 +145,18 @@ const cleanUrl = (url: string) =>
     { from: [":"], to: "" },
     { from: ["."], to: "_" },
   ])
+
+const pageFolder = (input: WebsitePageInput) => joinPath(deviceFolder(input.device), cleanUrl(input.url))
+
+const pageFilename = (input: WebsitePageInput) =>
+  `${input.device.id}_${cleanUrl(input.url)}.png`
+
+const getFilePath = (url: string) =>  {
+  return `${newUuid()}.${getExtension(url)}`
+  // const relativePath = getRelativePath(url)
+  // const p = replaceAll(relativePath, "//", "/")
+  // if (p.length > MAX_PATH_LENGTH) {
+  //   return `${newUuid()}_${getExtension(url)}`
+  // }
+  // return relativePath
+}

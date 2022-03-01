@@ -109,3 +109,5 @@ export const removeElements = async (
     `document.querySelectorAll("${selector}").forEach(x => x.remove())`
   )
 }
+
+export const getImgs = (page: puppeteer.Page) => getElements(page, "img")
