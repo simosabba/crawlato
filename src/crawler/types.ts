@@ -15,6 +15,7 @@ export interface CrawlSettings {
   devices: Device[]
   allowedDomains: string[]
   screenshotBaseFolder: string
+  filesFolder: string
   elementsToRemove?: string[]
   deduplicateUrls?: string[]
   excludedUrls?: string[]
@@ -50,4 +51,5 @@ export interface WebsitePage {
   title: string
   description: string
   screenshotPath: string
+  filesPath: string
 }

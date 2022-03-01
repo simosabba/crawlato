@@ -72,6 +72,7 @@ yarn-error.log
 out
 data
 snap
+files
 
 settings.yaml
 coverage

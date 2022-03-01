@@ -22,6 +22,36 @@ export interface ProcessCrawlJobOptions {
   settings: CrawlSettings
 }
 
+const takeScreenshot = async (
+  input: WebsitePageInput,
+  options: ProcessCrawlJobOptions,
+  page: puppeteer.Page) => {
+  const targetScreenshotFolder = path.join(
+    options.screenshotFolder,
+    deviceFolder(input.device)
+  )
+  ensureFolder(targetScreenshotFolder)
+  const screenshotPath = path.join(targetScreenshotFolder, pageFilename(input))
+  await page.screenshot({
+    fullPage: true,
+    path: screenshotPath,
+  })
+
+  return {
+    path: screenshotPath
+  }
+}
+
+const saveFiles = async (
+  input: WebsitePageInput,
+  options: ProcessCrawlJobOptions,
+  page: puppeteer.Page) => {
+
+  return {
+    path: ""
+  }
+}
+
 export const processCrawlJob = async (
   browser: puppeteer.Browser,
   input: WebsitePageInput,
@@ -37,14 +67,6 @@ export const processCrawlJob = async (
 
     await navigateTo(page, input.url, options.settings.timeoutSeconds)
 
-    const targetFolder = path.join(
-      options.screenshotFolder,
-      deviceFolder(input.device)
-    )
-
-    ensureFolder(targetFolder)
-    const screenshotPath = path.join(targetFolder, pageFilename(input))
-
     if (options.settings.scrollPage) {
       await scrollToBottom(page)
     }
@@ -53,10 +75,8 @@ export const processCrawlJob = async (
       await removeExtraElements(page, options.settings.elementsToRemove)
     }
 
-    await page.screenshot({
-      fullPage: true,
-      path: screenshotPath,
-    })
+    const screenshot = await takeScreenshot(input, options, page)
+    const files = await saveFiles(input, options, page)
 
     return {
       input,
@@ -64,7 +84,8 @@ export const processCrawlJob = async (
         url: input.url,
         title: await page.title(),
         description: "", // TODO: get description
-        screenshotPath,
+        screenshotPath: screenshot.path,
+        filesPath: files.path
       },
       links: (await extractLinks(page)) ?? [],
       referrer: options.referrer,

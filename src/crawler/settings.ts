@@ -20,6 +20,7 @@ export interface SettingsInput {
   url?: string
   depth?: number
   screenshotFolder?: string
+  filesFolder?: string
   devices?: Device[]
   elementsToRemove?: string[]
   allowedDomains?: string[]
@@ -39,6 +40,7 @@ export const buildSettings = (input: SettingsInput): CrawlSettings => {
     urlType: input.url.toLowerCase().endsWith(".xml") ? "sitemap" : "root",
     depth: input.depth ?? 1,
     screenshotBaseFolder: input.screenshotFolder ?? "snap",
+    filesFolder: input.filesFolder ?? "files",
     devices: defaultDevices,
     allowedDomains: input.allowedDomains ?? [getDomain(input.url)],
     timeoutSeconds: input.timeoutSeconds ?? 60,
